@@ -1,0 +1,41 @@
+name: Reset Support Session
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment (pre or mirror)"
+        required: true
+        default: pre
+      serialNumber:
+        description: "Serial number to reset session"
+        required: true
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: ${{ github.event.inputs.environment }}
+      SERIAL: ${{ github.event.inputs.serialNumber }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set script permissions
+        run: chmod +x ./scripts/resetSession.sh
+
+      - name: Load credentials from secrets
+        run: |
+          if [ "$ENVIRONMENT" == "pre" ]; then
+            echo "SUPPORT_USERNAME=${{ secrets.SUPPORT_USERNAME_PRE }}" >> $GITHUB_ENV
+            echo "SUPPORT_PASSWORD=${{ secrets.SUPPORT_PASSWORD_PRE }}" >> $GITHUB_ENV
+          elif [ "$ENVIRONMENT" == "mirror" ]; then
+            echo "SUPPORT_USERNAME=${{ secrets.SUPPORT_USERNAME_MIRROR }}" >> $GITHUB_ENV
+            echo "SUPPORT_PASSWORD=${{ secrets.SUPPORT_PASSWORD_MIRROR }}" >> $GITHUB_ENV
+          else
+            echo "Invalid environment" && exit 1
+          fi
+
+      - name: Run the reset session script
+        run: ./scripts/resetSession.sh "$ENVIRONMENT" "$SERIAL"
